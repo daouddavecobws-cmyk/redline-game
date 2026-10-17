@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Redline: Endless Highway</title>
+<title>Redline: Active Stunts</title>
 <style>
 :root{--ac:#ff2d3d;--pn:rgba(12,10,26,.92);box-sizing:border-box}
 *{box-sizing:border-box}
@@ -57,7 +57,7 @@ button{font:inherit;color:#fff;border:0;cursor:pointer}
 <div id="menu" class="ui">
   <div class="top">
     <h1>REDLINE</h1>
-    <p>Endless 6-Lane Highway, Stunts & Traffic.</p>
+    <p>Endless 6-Lane Highway & Real Stunts.</p>
     <div class="bank">Credits: $<span id="bank-val">1000</span></div>
   </div>
   <div>
@@ -73,7 +73,7 @@ button{font:inherit;color:#fff;border:0;cursor:pointer}
         <b>Nitro Boost</b><br>+Duration<br><span style="color:var(--ac)">$200</span>
       </div>
     </div>
-    <button class="big" onclick="startRace()">START ENDLESS RUN</button>
+    <button class="big" onclick="startRace()">START STUNT RUN</button>
   </div>
 </div>
 
@@ -109,13 +109,12 @@ let baseMaxSpeed = 130;
 let carX = 0;
 let traffic = [];
 let powerups = [];
-let scenery = [];
 let roadOffset = 0;
 let keys = { left: false, right: false, boost: false };
 let lastSpawn = 0;
 let shieldActive = false;
-let stuntMode = null;
-let stuntTimer = 0;
+let stuntMode = null; // 'ramp', 'loop'
+let stuntAnim = 0;
 let messageTimer = 0;
 
 function updateBank() {
@@ -151,7 +150,6 @@ function startRace() {
   carX = 0;
   traffic = [];
   powerups = [];
-  scenery = [];
   roadOffset = 0;
   shieldActive = false;
   stuntMode = null;
@@ -190,9 +188,10 @@ bindBtn('btn-left', 'left');
 bindBtn('btn-right', 'right');
 bindBtn('btn-boost', 'boost');
 
-function drawCar(x, y, scale, color, isPlayer = false, nitro = false) {
+function drawCar(x, y, scale, color, isPlayer = false, nitro = false, angle = 0) {
   ctx.save();
   ctx.translate(x, y);
+  ctx.rotate(angle);
   ctx.scale(scale, scale);
 
   const carW = 42;
@@ -274,12 +273,13 @@ function loop(time) {
 
     roadOffset = (roadOffset + speed * dt * 25) % 40;
 
+    // Handle Active Stunt Animations
     if (stuntMode) {
-      stuntTimer -= dt;
-      if (stuntTimer <= 0) stuntMode = null;
+      stuntAnim -= dt;
+      if (stuntAnim <= 0) stuntMode = null;
     }
 
-    // High frequency spawn rate so ramps & loops appear constantly!
+    // Spawn Obstacles
     if (time - lastSpawn > 500) {
       const laneWidth = roadWidth / 6;
       const lanes = [-roadWidth/2 + laneWidth/2, -roadWidth/2 + laneWidth*1.5, -roadWidth/2 + laneWidth*2.5, -roadWidth/2 + laneWidth*3.5, -roadWidth/2 + laneWidth*4.5, -roadWidth/2 + laneWidth*5.5];
@@ -287,31 +287,12 @@ function loop(time) {
       const colors = ['#06b6d4', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899'];
       
       const rand = Math.random();
-      if (rand < 0.3) {
-        // Powerup
-        powerups.push({
-          x: selectedLane,
-          y: -120,
-          type: Math.random() > 0.5 ? 'shield' : 'nitro'
-        });
-      } else if (rand < 0.6) {
-        // Stunt Ramp or Loop
-        traffic.push({
-          x: selectedLane,
-          y: -120,
-          type: Math.random() > 0.5 ? 'ramp' : 'loop',
-          width: 50,
-          height: 40
-        });
+      if (rand < 0.25) {
+        powerups.push({ x: selectedLane, y: -120, type: Math.random() > 0.5 ? 'shield' : 'nitro' });
+      } else if (rand < 0.55) {
+        traffic.push({ x: selectedLane, y: -120, type: Math.random() > 0.5 ? 'ramp' : 'loop' });
       } else {
-        // Traffic Car
-        traffic.push({
-          x: selectedLane,
-          y: -120,
-          type: 'car',
-          speedFactor: 0.3 + Math.random() * 0.3,
-          color: colors[Math.floor(Math.random() * colors.length)]
-        });
+        traffic.push({ x: selectedLane, y: -120, type: 'car', speedFactor: 0.3 + Math.random() * 0.3, color: colors[Math.floor(Math.random() * colors.length)] });
       }
       lastSpawn = time;
     }
@@ -325,17 +306,17 @@ function loop(time) {
       let playerY = h - 130;
       let targetX = w / 2 + t.x;
 
-      if (Math.abs(playerX - targetX) < 36 && Math.abs(playerY - t.y) < 55) {
+      if (Math.abs(playerX - targetX) < 38 && Math.abs(playerY - t.y) < 55) {
         if (t.type === 'ramp') {
           stuntMode = 'ramp';
-          stuntTimer = 2.0;
-          showStatus('MEGA JUMP! 🚀');
+          stuntAnim = 1.2; // 1.2 seconds of flight time
+          showStatus('AIRBORNE! 🚀 JUMPING RAMP!');
           traffic.splice(i, 1);
           continue;
         } else if (t.type === 'loop') {
           stuntMode = 'loop';
-          stuntTimer = 2.5;
-          showStatus('LOOP-DE-LOOP! 🌀');
+          stuntAnim = 1.5; // 1.5 seconds of 360 loop rotation
+          showStatus('360 LOOP-DE-LOOP! 🌀');
           traffic.splice(i, 1);
           continue;
         }
@@ -409,24 +390,36 @@ function loop(time) {
     }
     ctx.setLineDash([]);
 
+    // Draw Obstacles
     for (let t of traffic) {
       if (t.type === 'car') {
         drawCar(cx + t.x, t.y, 1.0, t.color, false);
       } else if (t.type === 'ramp') {
+        // Draw 3D Ramp wedge
         ctx.fillStyle = '#f59e0b';
-        ctx.fillRect(cx + t.x - 25, t.y, 50, 30);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText('RAMP', cx + t.x - 16, t.y + 20);
-      } else if (t.type === 'loop') {
-        ctx.strokeStyle = '#00e5ff';
-        ctx.lineWidth = 5;
         ctx.beginPath();
-        ctx.arc(cx + t.x, t.y + 20, 22, 0, Math.PI * 2);
+        ctx.moveTo(cx + t.x - 25, t.y + 30);
+        ctx.lineTo(cx + t.x + 25, t.y + 30);
+        ctx.lineTo(cx + t.x + 25, t.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('RAMP', cx + t.x - 14, t.y + 20);
+      } else if (t.type === 'loop') {
+        // Draw 3D Neon Loop Ring
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 6;
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(cx + t.x, t.y + 20, 24, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.shadowBlur = 0;
       }
     }
 
+    // Draw Powerups
     for (let p of powerups) {
       ctx.fillStyle = p.type === 'shield' ? '#00e5ff' : '#ff2d3d';
       ctx.shadowColor = ctx.fillStyle;
@@ -440,8 +433,25 @@ function loop(time) {
       ctx.fillText(p.type === 'shield' ? '🛡️' : '⚡', cx + p.x - 6, p.y + 4);
     }
 
-    let playerScale = stuntMode === 'ramp' ? 1.35 : (stuntMode === 'loop' ? 0.75 : 1.0);
-    drawCar(cx + carX, h - 130, playerScale, '#ff2d3d', true, keys.boost);
+    // Dynamic Player Stunt Physics Rendering
+    let playerScale = 1.0;
+    let playerYOffset = 0;
+    let playerAngle = 0;
+
+    if (stuntMode === 'ramp') {
+      // Parabolic jump arc (car scales up and lifts up vertically)
+      let progress = 1 - (stuntAnim / 1.2);
+      playerScale = 1.0 + Math.sin(progress * Math.PI) * 0.6;
+      playerYOffset = -Math.sin(progress * Math.PI) * 70;
+      playerAngle = Math.sin(progress * Math.PI) * 0.15;
+    } else if (stuntMode === 'loop') {
+      // Full 360 degree spin rotation
+      let progress = 1 - (stuntAnim / 1.5);
+      playerScale = 0.8 + Math.sin(progress * Math.PI) * 0.3;
+      playerAngle = progress * Math.PI * 2;
+    }
+
+    drawCar(cx + carX, (h - 130) + playerYOffset, playerScale, '#ff2d3d', true, keys.boost, playerAngle);
   }
 
   requestAnimationFrame(loop);
