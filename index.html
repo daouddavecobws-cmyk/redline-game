@@ -73,7 +73,7 @@ button{font:inherit;color:#fff;border:0;cursor:pointer}
         <b>Nitro Boost</b><br>+Duration<br><span style="color:var(--ac)">$200</span>
       </div>
     </div>
-    <button class="big" onclick="startRace()">START HIGHWAY RUN</button>
+    <button class="big" onclick="startRace()">START ENDLESS RUN</button>
   </div>
 </div>
 
@@ -156,17 +156,6 @@ function startRace() {
   shieldActive = false;
   stuntMode = null;
   lastSpawn = performance.now();
-
-  for(let i=0; i<12; i++) {
-    scenery.push({
-      y: i * 80,
-      side: i % 2 === 0 ? -1 : 1,
-      type: Math.random() > 0.4 ? 'building' : 'tree',
-      height: 80 + Math.random() * 100,
-      width: 50 + Math.random() * 40,
-      color: ['#1e1b4b', '#31103f', '#0f172a'][Math.floor(Math.random()*3)]
-    });
-  }
 }
 
 function endRace() {
@@ -190,7 +179,6 @@ function returnToMenu() {
   gameState = 'menu';
 }
 
-// Touch Bindings
 const bindBtn = (id, keyName) => {
   const el = document.getElementById(id);
   el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
@@ -202,7 +190,6 @@ bindBtn('btn-left', 'left');
 bindBtn('btn-right', 'right');
 bindBtn('btn-boost', 'boost');
 
-// Proportional Car Drawing
 function drawCar(x, y, scale, color, isPlayer = false, nitro = false) {
   ctx.save();
   ctx.translate(x, y);
@@ -211,28 +198,23 @@ function drawCar(x, y, scale, color, isPlayer = false, nitro = false) {
   const carW = 42;
   const carH = 76;
 
-  // Wheels
   ctx.fillStyle = '#0f0f15';
   ctx.fillRect(-carW/2 - 4, -carH/2 + 10, 5, 18);
   ctx.fillRect(carW/2 - 1, -carH/2 + 10, 5, 18);
   ctx.fillRect(-carW/2 - 4, carH/2 - 28, 5, 18);
   ctx.fillRect(carW/2 - 1, carH/2 - 28, 5, 18);
 
-  // Body
   ctx.fillStyle = color;
   ctx.fillRect(-carW/2, -carH/2, carW, carH);
 
-  // Cabin
   ctx.fillStyle = '#111827';
   ctx.fillRect(-carW/2 + 6, -carH/2 + 20, carW - 12, carH - 38);
 
-  // Windshield & Rear window
   ctx.fillStyle = '#38bdf8';
   ctx.fillRect(-carW/2 + 8, -carH/2 + 22, carW - 16, 12);
   ctx.fillRect(-carW/2 + 8, carH/2 - 28, carW - 16, 10);
 
   if (isPlayer) {
-    // Tail lights
     ctx.fillStyle = '#ef4444';
     ctx.shadowColor = '#ef4444';
     ctx.shadowBlur = 10;
@@ -256,7 +238,6 @@ function drawCar(x, y, scale, color, isPlayer = false, nitro = false) {
       ctx.fillRect(-8, carH/2, 16, 22 + Math.random() * 10);
     }
   } else {
-    // Traffic Headlights
     ctx.fillStyle = '#fff';
     ctx.shadowColor = '#fff';
     ctx.shadowBlur = 8;
@@ -298,23 +279,23 @@ function loop(time) {
       if (stuntTimer <= 0) stuntMode = null;
     }
 
-    // Spawn Traffic, Powerups & Ramps across 6 Lanes
-    if (time - lastSpawn > Math.max(900 - (speed * 2.5), 450)) {
+    // High frequency spawn rate so ramps & loops appear constantly!
+    if (time - lastSpawn > 500) {
       const laneWidth = roadWidth / 6;
       const lanes = [-roadWidth/2 + laneWidth/2, -roadWidth/2 + laneWidth*1.5, -roadWidth/2 + laneWidth*2.5, -roadWidth/2 + laneWidth*3.5, -roadWidth/2 + laneWidth*4.5, -roadWidth/2 + laneWidth*5.5];
       const selectedLane = lanes[Math.floor(Math.random() * lanes.length)];
       const colors = ['#06b6d4', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899'];
       
-      const isPowerup = Math.random() < 0.2;
-      const isRamp = !isPowerup && Math.random() < 0.15;
-
-      if (isPowerup) {
+      const rand = Math.random();
+      if (rand < 0.3) {
+        // Powerup
         powerups.push({
           x: selectedLane,
           y: -120,
           type: Math.random() > 0.5 ? 'shield' : 'nitro'
         });
-      } else if (isRamp) {
+      } else if (rand < 0.6) {
+        // Stunt Ramp or Loop
         traffic.push({
           x: selectedLane,
           y: -120,
@@ -323,6 +304,7 @@ function loop(time) {
           height: 40
         });
       } else {
+        // Traffic Car
         traffic.push({
           x: selectedLane,
           y: -120,
@@ -334,7 +316,7 @@ function loop(time) {
       lastSpawn = time;
     }
 
-    // Update Traffic
+    // Update Traffic & Stunts
     for (let i = traffic.length - 1; i >= 0; i--) {
       let t = traffic[i];
       t.y += (t.type === 'car' ? (speed * (1 - t.speedFactor)) : speed) * dt * 5;
@@ -406,16 +388,13 @@ function loop(time) {
 
     let cx = w / 2;
 
-    // Road Asphalt
     ctx.fillStyle = '#140c26';
     ctx.fillRect(cx - roadWidth/2, 0, roadWidth, h);
 
-    // Guardrails
     ctx.fillStyle = '#ff2d3d';
     ctx.fillRect(cx - roadWidth/2 - 6, 0, 6, h);
     ctx.fillRect(cx + roadWidth/2, 0, 6, h);
 
-    // 6-Lane Dividers
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
     ctx.lineWidth = 2;
     ctx.setLineDash([20, 20]);
@@ -430,7 +409,6 @@ function loop(time) {
     }
     ctx.setLineDash([]);
 
-    // Draw Traffic & Stunt Elements
     for (let t of traffic) {
       if (t.type === 'car') {
         drawCar(cx + t.x, t.y, 1.0, t.color, false);
@@ -449,7 +427,6 @@ function loop(time) {
       }
     }
 
-    // Draw Powerups
     for (let p of powerups) {
       ctx.fillStyle = p.type === 'shield' ? '#00e5ff' : '#ff2d3d';
       ctx.shadowColor = ctx.fillStyle;
@@ -463,7 +440,6 @@ function loop(time) {
       ctx.fillText(p.type === 'shield' ? '🛡️' : '⚡', cx + p.x - 6, p.y + 4);
     }
 
-    // Draw Player Car (Exact Same Proportional Scale as Traffic)
     let playerScale = stuntMode === 'ramp' ? 1.35 : (stuntMode === 'loop' ? 0.75 : 1.0);
     drawCar(cx + carX, h - 130, playerScale, '#ff2d3d', true, keys.boost);
   }
