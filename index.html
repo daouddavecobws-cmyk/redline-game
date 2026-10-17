@@ -1,649 +1,520 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Stunt Driving & Car Customizer</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body, html { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #111; color: #fff; }
-        #canvas-container { width: 100%; height: 100vh; display: block; }
-        
-        /* UI Overlay */
-        #hud {
-            position: absolute; top: 20px; left: 20px; pointer-events: none;
-            display: flex; flex-direction: column; gap: 8px; z-index: 10;
-        }
-        .hud-card {
-            background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(8px);
-            padding: 12px 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.15);
-            font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
-        }
-        #speedometer { font-size: 24px; color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.5); }
-        
-        /* Garage / Customizer UI */
-        #garage-btn {
-            position: absolute; top: 20px; right: 20px; z-index: 20;
-            padding: 12px 24px; background: linear-gradient(135deg, #ff0055, #ff5500);
-            border: none; color: #fff; border-radius: 30px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 0, 85, 0.4); transition: transform 0.2s, box-shadow 0.2s;
-        }
-        #garage-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255, 0, 85, 0.6); }
-
-        #garage-modal {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 15, 25, 0.95); backdrop-filter: blur(12px);
-            display: none; flex-direction: row; z-index: 30;
-        }
-        
-        .garage-sidebar {
-            width: 320px; height: 100%; background: rgba(0, 0, 0, 0.5);
-            border-right: 1px solid rgba(255, 255, 255, 0.1); padding: 20px;
-            overflow-y: auto; display: flex; flex-direction: column; gap: 15px;
-        }
-        
-        .garage-sidebar::-webkit-scrollbar { width: 6px; }
-        .garage-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
-
-        .garage-main { flex: 1; height: 100%; position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
-
-        h2, h3 { color: #fff; margin-bottom: 8px; font-size: 18px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid #ff0055; padding-bottom: 4px; }
-        
-        .car-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-        .car-card {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px; border-radius: 6px; text-align: center; cursor: pointer; transition: all 0.2s;
-            font-size: 12px; font-weight: bold;
-        }
-        .car-card:hover, .car-card.active { background: #ff0055; border-color: #ff0055; color: #fff; }
-        .car-card span { display: block; font-size: 10px; opacity: 0.7; font-weight: normal; margin-top: 2px; }
-
-        .control-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-        .control-group label { font-size: 12px; color: #aaa; text-transform: uppercase; }
-        .control-group input[type="color"] { width: 100%; height: 35px; border: none; border-radius: 4px; cursor: pointer; background: transparent; }
-        .control-group select, .control-group input[type="range"] {
-            width: 100%; padding: 8px; background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #fff; outline: none;
-        }
-
-        .garage-actions { display: flex; justify-content: flex-end; gap: 15px; }
-        .btn {
-            padding: 12px 30px; border: none; border-radius: 25px; font-weight: bold;
-            cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
-        }
-        .btn-primary { background: #00ffcc; color: #000; box-shadow: 0 0 15px rgba(0,255,204,0.4); }
-        .btn-primary:hover { background: #00cca3; }
-
-        #controls-hint {
-            position: absolute; bottom: 20px; left: 20px; pointer-events: none;
-            background: rgba(0, 0, 0, 0.6); padding: 12px 20px; border-radius: 8px; font-size: 12px; color: #ccc;
-        }
-    </style>
-    <!-- Three.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Redline: Ultimate Edition</title>
+<style>
+:root{--ac:#ff2d3d;--pn:rgba(10,8,22,.95);box-sizing:border-box}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#05020a;color:#fff;font-family:"Avenir Next","Segoe UI",sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hide{display:none!important}
+.ui{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);pointer-events:none}
+.ui>*{pointer-events:auto}
+h1{font-size:36px;line-height:1;margin:0;font-style:italic;font-weight:900;letter-spacing:1px;text-shadow:0 3px 0 var(--ac),0 0 25px #ff2d3daa}
+.bank{display:inline-block;background:var(--pn);padding:6px 12px;border-radius:10px;font-weight:700;border:1px solid #3a3350}
+.grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:6px;max-height:160px;overflow-y:auto;padding:4px;background:rgba(0,0,0,0.4);border-radius:12px;border:1px solid #3a3350}
+.car-card{background:var(--pn);padding:8px;border-radius:8px;border:2px solid #3a3350;font-size:11px;text-align:center;cursor:pointer;font-weight:700}
+.car-card.sel{border-color:var(--ac);background:#251642;box-shadow:0 0 10px var(--ac)}
+.custom-row{display:flex;gap:6px;margin-top:6px;align-items:center}
+.custom-row label{font-size:11px;font-weight:800;opacity:0.8}
+input[type="color"]{-webkit-appearance:none;border:none;width:32px;height:24px;border-radius:6px;cursor:pointer;background:none}
+input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+input[type="color"]::-webkit-color-swatch{border:2px solid #fff;border-radius:6px}
+button{font:inherit;color:#fff;border:0;cursor:pointer}
+.big{width:100%;padding:12px;font-size:18px;font-weight:900;font-style:italic;background:var(--ac);border-radius:14px;box-shadow:0 4px 0 #a01020;margin-top:6px}
+.btn-sec{background:#3a3350;box-shadow:0 4px 0 #1e192b}
+#over{justify-content:center;align-items:center;background:rgba(5,2,10,0.94);text-align:center;padding:24px}
+#over-content{background:var(--pn);padding:24px;border-radius:20px;border:2px solid #3a3350;width:100%;max-width:360px}
+#hud{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;justify-content:space-between;padding:0 14px;font-weight:800;text-shadow:0 2px 6px #000;pointer-events:none}
+#hud b{font-size:22px;font-style:italic;color:#00e5ff}
+#status-msg{position:fixed;top:70px;left:0;right:0;text-align:center;font-weight:900;font-size:20px;font-style:italic;color:#00e5ff;text-shadow:0 0 12px #00e5ff;pointer-events:none}
+#race-controls{position:fixed;bottom:25px;left:0;right:0;display:flex;justify-content:space-between;padding:0 20px;pointer-events:none}
+.control-btn{width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.18);border:2px solid #fff;font-size:22px;font-weight:bold;display:flex;align-items:center;justify-content:center;pointer-events:auto;backdrop-filter:blur(4px)}
+.btn-boost{background:var(--ac);border-color:#ff8892}
+</style>
 </head>
 <body>
 
-    <div id="hud">
-        <div class="hud-card" id="speedometer">0 MPH</div>
-        <div class="hud-card" id="car-name-display">Vehicle: Supercar Alpha</div>
+<canvas id="c"></canvas>
+
+<!-- HUD -->
+<div id="hud" class="hide">
+  <div>SPEED<br><b id="hud-speed">0</b> <small style="font-size:10px">MPH</small></div>
+  <div>POWER<br><b id="hud-power" style="color:#00ffcc">READY</b></div>
+  <div>DIST<br><b id="hud-dist">0</b> <small style="font-size:10px">M</small></div>
+</div>
+
+<div id="status-msg" class="hide"></div>
+
+<!-- Mobile Controls -->
+<div id="race-controls" class="hide">
+  <div style="display:flex;gap:12px">
+    <button class="control-btn" id="btn-left">◀</button>
+    <button class="control-btn" id="btn-right">▶</button>
+  </div>
+  <button class="control-btn btn-boost" id="btn-boost">⚡</button>
+</div>
+
+<!-- Garage Menu -->
+<div id="menu" class="ui">
+  <div class="top">
+    <h1>REDLINE</h1>
+    <p>30+ Cars • Infinite 6-Lane Highway • Custom Studio</p>
+    <div class="bank">Credits: $<span id="bank-val">5000</span></div>
+  </div>
+  <div>
+    <div style="font-weight:800;margin-bottom:4px;font-size:12px">SELECT VEHICLE (ALL UNLOCKED)</div>
+    <div class="grid" id="car-grid"></div>
+    
+    <div class="custom-row">
+      <label>Paint:</label>
+      <input type="color" id="paint-color" value="#ff2d3d" onchange="updateCustom()">
+      <label style="margin-left:8px">Underglow:</label>
+      <input type="color" id="glow-color" value="#00e5ff" onchange="updateCustom()">
     </div>
 
-    <button id="garage-btn" onclick="openGarage()">🏎️ Custom Garage</button>
+    <button class="big" onclick="startRace()">START HIGHWAY RUN</button>
+  </div>
+</div>
 
-    <div id="controls-hint">
-        <strong>Controls:</strong> W / Up Arrow = Accelerate | S / Down Arrow = Reverse | A/D = Steer | Space = Brake | R = Reset Car
-    </div>
+<!-- Game Over -->
+<div id="over" class="ui hide">
+  <div id="over-content">
+    <h2>CRASHED!</h2>
+    <p>Distance Driven: <span id="final-dist" style="color:#00e5ff;font-weight:bold">0m</span></p>
+    <p>Prize Earned: <span id="final-prize" style="color:#00ffcc;font-weight:bold">$0</span></p>
+    <button class="big" onclick="startRace()">RETRY RUN</button>
+    <button class="big btn-sec" onclick="returnToMenu()">GARAGE</button>
+  </div>
+</div>
 
-    <!-- Garage Overlay -->
-    <div id="garage-modal">
-        <div class="garage-sidebar">
-            <h2>Select Vehicle (30 Unlocked)</h2>
-            <div class="car-grid" id="car-list"></div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-            <h2>Customization</h2>
-            
-            <div class="control-group">
-                <label>Body Paint Color</label>
-                <input type="color" id="paintColor" value="#ff0033" onchange="updateCarCustoms()">
-            </div>
+let w, h;
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
 
-            <div class="control-group">
-                <label>Paint Finish</label>
-                <select id="paintFinish" onchange="updateCarCustoms()">
-                    <option value="gloss">Glossy / Metallic</option>
-                    <option value="matte">Matte</option>
-                    <option value="chrome">Chrome / Reflective</option>
-                </select>
-            </div>
+// Generate 32 Unlocked Cars
+const carsList = [];
+const carNames = [
+  "Apex GT", "Viper GTS", "Cyber-X", "Neon Phantom", "Stinger V8", "Hyperion R", "Spectre", 
+  "Zenith", "Omega", "Eclipse", "Venom S", "Titanium", "Blaze", "Phantom", "Rogue", "Sovereign",
+  "Tornado", "Hurricane", "Cyclone", "Avalanche", "Stellar", "Quantum", "Pulse", "Reaper",
+  "Striker", "Falcon", "Mantis", "Wraith", "Titan", "Demon", "Inferno", "Zero"
+];
+for(let i=0; i<32; i++) {
+  carsList.push({
+    id: i,
+    name: carNames[i],
+    speed: 120 + (i % 8) * 4,
+    handling: 300 + (i % 5) * 20
+  });
+}
 
-            <div class="control-group">
-                <label>Rim Style</label>
-                <select id="rimStyle" onchange="updateCarCustoms()">
-                    <option value="5spoke">5-Spoke Sport</option>
-                    <option value="dish">Deep Dish Muscle</option>
-                    <option value="offroad">Off-Road Heavy</option>
-                </select>
-            </div>
+let selectedCarIndex = 0;
+let customPaint = '#ff2d3d';
+let customGlow = '#00e5ff';
 
-            <div class="control-group">
-                <label>Rim Color</label>
-                <input type="color" id="rimColor" value="#cccccc" onchange="updateCarCustoms()">
-            </div>
+function buildGarageGrid() {
+  const grid = document.getElementById('car-grid');
+  grid.innerHTML = '';
+  carsList.forEach((car, idx) => {
+    const div = document.createElement('div');
+    div.className = `car-card ${idx === selectedCarIndex ? 'sel' : ''}`;
+    div.innerHTML = `🚗<br>${car.name}`;
+    div.onclick = () => {
+      selectedCarIndex = idx;
+      document.querySelectorAll('.car-card').forEach(c => c.classList.remove('sel'));
+      div.classList.add('sel');
+    };
+    grid.appendChild(div);
+  });
+}
+buildGarageGrid();
 
-            <div class="control-group">
-                <label>Window Tint</label>
-                <input type="range" id="windowTint" min="0.1" max="0.9" step="0.1" value="0.7" onchange="updateCarCustoms()">
-            </div>
+function updateCustom() {
+  customPaint = document.getElementById('paint-color').value;
+  customGlow = document.getElementById('glow-color').value;
+}
 
-            <div class="control-group">
-                <label>Spoiler / Wing</label>
-                <select id="spoilerType" onchange="updateCarCustoms()">
-                    <option value="none">None</option>
-                    <option value="sport">GT Sport Wing</option>
-                    <option value="drag">Big Drag Spoiler</option>
-                </select>
-            </div>
+let gameState = 'menu';
+let credits = 5000;
+let distance = 0;
+let speed = 0;
+let carX = 0;
+let traffic = [];
+let powerups = [];
+let roadOffset = 0;
+let keys = { left: false, right: false, boost: false };
+let lastSpawn = 0;
+let shieldActive = false;
+let stuntMode = null; 
+let stuntAnim = 0;
+let messageTimer = 0;
 
-            <div class="control-group">
-                <label>Suspension Height</label>
-                <input type="range" id="suspensionHeight" min="0.5" max="2.0" step="0.1" value="1.0" onchange="updateCarCustoms()">
-            </div>
-        </div>
+function updateBank() {
+  document.getElementById('bank-val').innerText = credits;
+}
 
-        <div class="garage-main">
-            <div></div>
-            <div class="garage-actions">
-                <button class="btn btn-primary" onclick="closeGarage()">Save & Drive</button>
-            </div>
-        </div>
-    </div>
+function showStatus(text) {
+  const el = document.getElementById('status-msg');
+  el.innerText = text;
+  el.classList.remove('hide');
+  messageTimer = 1.5;
+}
 
-    <div id="canvas-container"></div>
+function startRace() {
+  document.getElementById('menu').classList.add('hide');
+  document.getElementById('over').classList.add('hide');
+  document.getElementById('hud').classList.remove('hide');
+  document.getElementById('race-controls').classList.remove('hide');
+  
+  gameState = 'racing';
+  distance = 0;
+  speed = 50;
+  carX = 0;
+  traffic = [];
+  powerups = [];
+  roadOffset = 0;
+  shieldActive = false;
+  stuntMode = null;
+  lastSpawn = performance.now();
+}
 
-    <script>
-        // ---------------------------------------------------------------
-        // 30 CAR ROSTER GENERATION
-        // ---------------------------------------------------------------
-        const CAR_TYPES = ["Supercar", "Muscle", "Offroad", "Truck", "Hypercar", "Tuner"];
-        const CAR_DATABASE = [];
+function endRace() {
+  gameState = 'over';
+  document.getElementById('hud').classList.add('hide');
+  document.getElementById('race-controls').classList.add('hide');
+  document.getElementById('status-msg').classList.add('hide');
+  document.getElementById('over').classList.remove('hide');
+  
+  const earned = Math.floor(distance * 0.7);
+  credits += earned;
+  
+  document.getElementById('final-dist').innerText = Math.floor(distance) + 'm';
+  document.getElementById('final-prize').innerText = '$' + earned;
+  updateBank();
+}
 
-        for (let i = 1; i <= 30; i++) {
-            const category = CAR_TYPES[(i - 1) % CAR_TYPES.length];
-            CAR_DATABASE.push({
-                id: i,
-                name: `${category} v${i}`,
-                category: category,
-                speedMax: 0.8 + (i * 0.015),
-                accel: 0.015 + (i * 0.0005),
-                color: `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`,
-                rimColor: '#dddddd',
-                finish: 'gloss',
-                rimStyle: '5spoke',
-                spoiler: i % 2 === 0 ? 'sport' : 'none',
-                tint: 0.7,
-                height: 1.0
-            });
+function returnToMenu() {
+  document.getElementById('over').classList.add('hide');
+  document.getElementById('menu').classList.remove('hide');
+  gameState = 'menu';
+}
+
+const bindBtn = (id, keyName) => {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+  el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+  el.addEventListener('mousedown', () => { keys[keyName] = true; });
+  el.addEventListener('mouseup', () => { keys[keyName] = false; });
+};
+bindBtn('btn-left', 'left');
+bindBtn('btn-right', 'right');
+bindBtn('btn-boost', 'boost');
+
+function drawCar(x, y, scale, color, glowColor, isPlayer = false, nitro = false, angle = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.scale(scale, scale);
+
+  const carW = 44;
+  const carH = 80;
+
+  // Underglow Aura
+  if (isPlayer) {
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth = 4;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 18;
+    ctx.strokeRect(-carW/2 - 4, -carH/2 - 4, carW + 8, carH + 8);
+  }
+
+  // Wheels
+  ctx.fillStyle = '#050508';
+  ctx.fillRect(-carW/2 - 5, -carH/2 + 12, 6, 20);
+  ctx.fillRect(carW/2 - 1, -carH/2 + 12, 6, 20);
+  ctx.fillRect(-carW/2 - 5, carH/2 - 30, 6, 20);
+  ctx.fillRect(carW/2 - 1, carH/2 - 30, 6, 20);
+
+  // Body
+  ctx.fillStyle = color;
+  ctx.fillRect(-carW/2, -carH/2, carW, carH);
+
+  // Cabin & Windshield
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-carW/2 + 6, -carH/2 + 22, carW - 12, carH - 40);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillRect(-carW/2 + 8, -carH/2 + 24, carW - 16, 12);
+  ctx.fillRect(-carW/2 + 8, carH/2 - 30, carW - 16, 10);
+
+  if (isPlayer) {
+    ctx.fillStyle = '#ef4444';
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 12;
+    ctx.fillRect(-carW/2 + 3, carH/2 - 3, 8, 4);
+    ctx.fillRect(carW/2 - 11, carH/2 - 3, 8, 4);
+    
+    if (shieldActive) {
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#00e5ff';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(0, 0, carW * 0.9, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    if (nitro) {
+      ctx.fillStyle = '#00e5ff';
+      ctx.shadowColor = '#00e5ff';
+      ctx.shadowBlur = 20;
+      ctx.fillRect(-10, carH/2, 20, 25 + Math.random() * 12);
+    }
+  } else {
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = '#fff';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(-carW/2 + 3, -carH/2, 8, 4);
+    ctx.fillRect(carW/2 - 11, -carH/2, 8, 4);
+  }
+
+  ctx.restore();
+}
+
+let lastTime = performance.now();
+function loop(time) {
+  const dt = (time - lastTime) / 1000;
+  lastTime = time;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (messageTimer > 0) {
+    messageTimer -= dt;
+    if (messageTimer <= 0) document.getElementById('status-msg').classList.add('hide');
+  }
+
+  if (gameState === 'racing') {
+    let activeCar = carsList[selectedCarIndex];
+    let currentMaxSpeed = activeCar.speed + (keys.boost ? 60 : 0);
+    speed += (currentMaxSpeed - speed) * 0.04;
+    distance += speed * dt * 3;
+
+    let handling = activeCar.handling;
+    if (keys.left) carX -= handling * dt;
+    if (keys.right) carX += handling * dt;
+
+    let roadWidth = Math.min(w * 0.85, 400);
+    carX = Math.max(-roadWidth/2 + 25, Math.min(roadWidth/2 - 25, carX));
+
+    roadOffset = (roadOffset + speed * dt * 30) % 40;
+
+    if (stuntMode) {
+      stuntAnim -= dt;
+      if (stuntAnim <= 0) stuntMode = null;
+    }
+
+    // Spawn Traffic & Stunts
+    if (time - lastSpawn > 450) {
+      const laneWidth = roadWidth / 6;
+      const lanes = [-roadWidth/2 + laneWidth/2, -roadWidth/2 + laneWidth*1.5, -roadWidth/2 + laneWidth*2.5, -roadWidth/2 + laneWidth*3.5, -roadWidth/2 + laneWidth*4.5, -roadWidth/2 + laneWidth*5.5];
+      const selectedLane = lanes[Math.floor(Math.random() * lanes.length)];
+      const colors = ['#06b6d4', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#3b82f6'];
+      
+      const rand = Math.random();
+      if (rand < 0.25) {
+        powerups.push({ x: selectedLane, y: -120, type: Math.random() > 0.5 ? 'shield' : 'nitro' });
+      } else if (rand < 0.55) {
+        traffic.push({ x: selectedLane, y: -120, type: Math.random() > 0.5 ? 'ramp' : 'loop' });
+      } else {
+        traffic.push({ x: selectedLane, y: -120, type: 'car', speedFactor: 0.3 + Math.random() * 0.3, color: colors[Math.floor(Math.random() * colors.length)] });
+      }
+      lastSpawn = time;
+    }
+
+    // Update Traffic & Stunts
+    for (let i = traffic.length - 1; i >= 0; i--) {
+      let t = traffic[i];
+      t.y += (t.type === 'car' ? (speed * (1 - t.speedFactor)) : speed) * dt * 5.5;
+
+      let playerX = w / 2 + carX;
+      let playerY = h - 130;
+      let targetX = w / 2 + t.x;
+
+      if (Math.abs(playerX - targetX) < 38 && Math.abs(playerY - t.y) < 55) {
+        if (t.type === 'ramp') {
+          stuntMode = 'ramp';
+          stuntAnim = 1.3;
+          showStatus('MEGA RAMP LAUNCH! 🚀');
+          traffic.splice(i, 1);
+          continue;
+        } else if (t.type === 'loop') {
+          stuntMode = 'loop';
+          stuntAnim = 1.6;
+          showStatus('FULL 360° HYPER LOOP! 🌀');
+          traffic.splice(i, 1);
+          continue;
         }
 
-        let currentCarIndex = 0;
-        let activeCarData = Object.assign({}, CAR_DATABASE[0]);
-
-        // ---------------------------------------------------------------
-        // THREE.JS SETUP & WORLD INITIALIZATION
-        // ---------------------------------------------------------------
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb);
-        scene.fog = new THREE.FogExp2(0x87ceeb, 0.002);
-
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
-
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(100, 300, 100);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 1000;
-        const d = 200;
-        dirLight.shadow.camera.left = -d;
-        dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d;
-        dirLight.shadow.camera.bottom = -d;
-        scene.add(dirLight);
-
-        // Ground Mesh
-        const groundGeo = new THREE.PlaneGeometry(3000, 3000);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.8 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        scene.add(ground);
-
-        // Grid Floor helper for styling
-        const grid = new THREE.GridHelper(3000, 100, 0x000000, 0x000000);
-        grid.position.y = 0.05;
-        grid.material.opacity = 0.15;
-        grid.material.transparent = true;
-        scene.add(grid);
-
-        // ---------------------------------------------------------------
-        // TRACK & LOOP-DE-LOOP BUILDING
-        // ---------------------------------------------------------------
-        function buildTrackAndStunts() {
-            // Main Road
-            const roadGeo = new THREE.BoxGeometry(40, 0.2, 800);
-            const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
-            const road = new THREE.Mesh(roadGeo, roadMat);
-            road.position.set(0, 0.1, -300);
-            road.receiveShadow = true;
-            scene.add(road);
-
-            // True Vertical 3D Loop-de-Loop Curve
-            const loopRadius = 35;
-            const loopSegments = 60;
-            const loopGroup = new THREE.Group();
-            loopGroup.position.set(0, 0, -500);
-
-            for (let i = 0; i < loopSegments; i++) {
-                const angle1 = (i / loopSegments) * Math.PI * 2;
-                const angle2 = ((i + 1) / loopSegments) * Math.PI * 2;
-
-                const z1 = -Math.sin(angle1) * loopRadius;
-                const y1 = loopRadius - Math.cos(angle1) * loopRadius;
-
-                const z2 = -Math.sin(angle2) * loopRadius;
-                const y2 = loopRadius - Math.cos(angle2) * loopRadius;
-
-                const dx = 0;
-                const dy = y2 - y1;
-                const dz = z2 - z1;
-                const length = Math.sqrt(dy * dy + dz * dz);
-
-                const segGeo = new THREE.BoxGeometry(38, 0.8, length + 0.5);
-                const segMat = new THREE.MeshStandardMaterial({ 
-                    color: i % 2 === 0 ? 0xff0055 : 0x333333,
-                    roughness: 0.3 
-                });
-                const seg = new THREE.Mesh(segGeo, segMat);
-
-                seg.position.set(0, (y1 + y2) / 2, (z1 + z2) / 2);
-                seg.rotation.x = Math.atan2(dy, -dz);
-                seg.receiveShadow = true;
-                seg.castShadow = true;
-                loopGroup.add(seg);
-            }
-            scene.add(loopGroup);
-
-            // Large Stunt Jump Ramp
-            const rampGeo = new THREE.BoxGeometry(30, 1, 40);
-            const rampMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.4 });
-            const ramp = new THREE.Mesh(rampGeo, rampMat);
-            ramp.position.set(0, 5, -100);
-            ramp.rotation.x = Math.PI / 10;
-            ramp.receiveShadow = true;
-            ramp.castShadow = true;
-            scene.add(ramp);
+        if (shieldActive) {
+          shieldActive = false;
+          showStatus('SHIELD SAVED YOU! 🛡️');
+          traffic.splice(i, 1);
+        } else if (stuntMode) {
+          traffic.splice(i, 1);
+        } else {
+          endRace();
         }
-        buildTrackAndStunts();
+      }
 
-        // ---------------------------------------------------------------
-        // CAR PROCEDURAL GEOMETRY BUILDER
-        // ---------------------------------------------------------------
-        let carGroup = new THREE.Group();
-        scene.add(carGroup);
+      if (t.y > h + 100) traffic.splice(i, 1);
+    }
 
-        let bodyMesh, cabinMesh, spoilerMesh;
-        let wheelMeshes = [];
+    // Update Powerups
+    for (let i = powerups.length - 1; i >= 0; i--) {
+      let p = powerups[i];
+      p.y += speed * dt * 5.5;
 
-        function createCarMesh(data) {
-            // Clear previous car
-            while (carGroup.children.length > 0) {
-                carGroup.remove(carGroup.children[0]);
-            }
-            wheelMeshes = [];
+      let playerX = w / 2 + carX;
+      let playerY = h - 130;
 
-            // Body Material
-            let roughness = 0.3, metalness = 0.5;
-            if (data.finish === 'matte') { roughness = 0.9; metalness = 0.1; }
-            if (data.finish === 'chrome') { roughness = 0.05; metalness = 0.95; }
-
-            const bodyMat = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(data.color),
-                roughness: roughness,
-                metalness: metalness
-            });
-
-            // Glass Material
-            const glassMat = new THREE.MeshStandardMaterial({
-                color: 0x111111,
-                roughness: 0.1,
-                metalness: 0.9,
-                transparent: true,
-                opacity: parseFloat(data.tint)
-            });
-
-            // Rim Material
-            const rimMat = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(data.rimColor),
-                roughness: 0.2,
-                metalness: 0.8
-            });
-
-            const tireMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.8 });
-
-            // Base dimensions adjusted by category
-            let bodyW = 2.4, bodyH = 0.9, bodyL = 4.8;
-            let cabinW = 2.0, cabinH = 0.7, cabinL = 2.4;
-
-            if (data.category === 'Truck' || data.category === 'Offroad') {
-                bodyW = 2.6; bodyH = 1.2; bodyL = 5.2;
-                cabinW = 2.4; cabinH = 0.9; cabinL = 2.2;
-            } else if (data.category === 'Supercar' || data.category === 'Hypercar') {
-                bodyW = 2.5; bodyH = 0.7; bodyL = 4.6;
-                cabinW = 1.8; cabinH = 0.6; cabinL = 2.2;
-            }
-
-            // Chassis Main Body
-            const bodyGeo = new THREE.BoxGeometry(bodyW, bodyH, bodyL);
-            bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            bodyMesh.position.y = bodyH / 2 + 0.4;
-            bodyMesh.castShadow = true;
-            bodyMesh.receiveShadow = true;
-            carGroup.add(bodyMesh);
-
-            // Cabin / Windows
-            const cabinGeo = new THREE.BoxGeometry(cabinW, cabinH, cabinL);
-            cabinMesh = new THREE.Mesh(cabinGeo, glassMat);
-            cabinMesh.position.set(0, bodyMesh.position.y + bodyH / 2 + cabinH / 2 - 0.1, -0.2);
-            cabinMesh.castShadow = true;
-            carGroup.add(cabinMesh);
-
-            // Wheels
-            const wheelRadius = (data.category === 'Offroad' || data.category === 'Truck') ? 0.6 : 0.45;
-            const wheelWidth = 0.35;
-            const wheelGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelWidth, 24);
-            const rimGeo = new THREE.CylinderGeometry(wheelRadius * 0.6, wheelRadius * 0.6, wheelWidth + 0.02, 12);
-
-            const wheelPositions = [
-                { x: -bodyW/2 - 0.1, y: wheelRadius, z:  bodyL/3 }, // Front Left
-                { x:  bodyW/2 + 0.1, y: wheelRadius, z:  bodyL/3 }, // Front Right
-                { x: -bodyW/2 - 0.1, y: wheelRadius, z: -bodyL/3 }, // Rear Left
-                { x:  bodyW/2 + 0.1, y: wheelRadius, z: -bodyL/3 }  // Rear Right
-            ];
-
-            wheelPositions.forEach(pos => {
-                const wheelContainer = new THREE.Group();
-                
-                const tire = new THREE.Mesh(wheelGeo, tireMat);
-                tire.rotation.z = Math.PI / 2;
-                tire.castShadow = true;
-                wheelContainer.add(tire);
-
-                const rim = new THREE.Mesh(rimGeo, rimMat);
-                rim.rotation.z = Math.PI / 2;
-                wheelContainer.add(rim);
-
-                wheelContainer.position.set(pos.x, pos.y * data.height, pos.z);
-                carGroup.add(wheelContainer);
-                wheelMeshes.push(wheelContainer);
-            });
-
-            // Spoiler
-            if (data.spoiler !== 'none') {
-                const spWidth = data.spoiler === 'drag' ? 2.8 : 2.2;
-                const spGeo = new THREE.BoxGeometry(spWidth, 0.1, 0.6);
-                spoilerMesh = new THREE.Mesh(spGeo, bodyMat);
-                
-                const strutGeo = new THREE.BoxGeometry(0.1, 0.5, 0.1);
-                const strut1 = new THREE.Mesh(strutGeo, bodyMat);
-                const strut2 = new THREE.Mesh(strutGeo, bodyMat);
-                
-                strut1.position.set(-0.6, -0.25, 0);
-                strut2.position.set( 0.6, -0.25, 0);
-                
-                spoilerMesh.add(strut1);
-                spoilerMesh.add(strut2);
-
-                spoilerMesh.position.set(0, bodyMesh.position.y + bodyH / 2 + 0.5, -bodyL / 2 + 0.3);
-                carGroup.add(spoilerMesh);
-            }
+      if (Math.abs(playerX - (w/2 + p.x)) < 36 && Math.abs(playerY - p.y) < 45) {
+        if (p.type === 'shield') {
+          shieldActive = true;
+          showStatus('SHIELD ACTIVATED! 🛡️');
+        } else {
+          keys.boost = true;
+          setTimeout(() => keys.boost = false, 3000);
+          showStatus('SUPER NITRO BOOST! ⚡');
         }
+        powerups.splice(i, 1);
+      }
 
-        // ---------------------------------------------------------------
-        // VEHICLE PHYSICS & CONTROLS
-        // ---------------------------------------------------------------
-        let carPos = new THREE.Vector3(0, 0.5, 0);
-        let carRot = new THREE.Euler(0, 0, 0, 'YXZ');
-        let carQuaternion = new THREE.Quaternion();
-        
-        let speed = 0;
-        let steeringAngle = 0;
+      if (p.y > h + 100) powerups.splice(i, 1);
+    }
 
-        const keys = { w: false, s: false, a: false, d: false, space: false };
+    // Update HUD
+    document.getElementById('hud-speed').innerText = Math.round(speed);
+    document.getElementById('hud-power').innerText = shieldActive ? 'SHIELDED' : (stuntMode ? stuntMode.toUpperCase() : 'READY');
+    document.getElementById('hud-dist').innerText = Math.floor(distance) + 'm';
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'w' || e.key === 'ArrowUp') keys.w = true;
-            if (e.key === 's' || e.key === 'ArrowDown') keys.s = true;
-            if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = true;
-            if (e.key === 'd' || e.key === 'ArrowRight') keys.d = true;
-            if (e.key === ' ') keys.space = true;
-            if (e.key === 'r' || e.key === 'R') resetCarPosition();
-        });
+    // RENDER HIGH-END CYBERPUNK SCENE
+    ctx.fillStyle = '#05020a';
+    ctx.fillRect(0, 0, w, h);
 
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'w' || e.key === 'ArrowUp') keys.w = false;
-            if (e.key === 's' || e.key === 'ArrowDown') keys.s = false;
-            if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = false;
-            if (e.key === 'd' || e.key === 'ArrowRight') keys.d = false;
-            if (e.key === ' ') keys.space = false;
-        });
+    // Glowing Horizon Sun
+    let cx = w / 2;
+    let sunGradient = ctx.createRadialGradient(cx, h * 0.35, 10, cx, h * 0.35, 160);
+    sunGradient.addColorStop(0, '#ff007f');
+    sunGradient.addColorStop(1, 'rgba(13,7,26,0)');
+    ctx.fillStyle = sunGradient;
+    ctx.fillRect(cx - 200, 0, 400, h * 0.6);
 
-        function resetCarPosition() {
-            carPos.set(0, 0.5, 0);
-            carRot.set(0, 0, 0);
-            carQuaternion.identity();
-            speed = 0;
-            carGroup.position.copy(carPos);
-            carGroup.quaternion.copy(carQuaternion);
-        }
+    // Road Asphalt
+    ctx.fillStyle = '#100a20';
+    ctx.fillRect(cx - roadWidth/2, 0, roadWidth, h);
 
-        function updatePhysics() {
-            if (inGarage) return;
+    // Guardrails
+    ctx.fillStyle = '#ff2d3d';
+    ctx.shadowColor = '#ff2d3d';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(cx - roadWidth/2 - 6, 0, 6, h);
+    ctx.fillRect(cx + roadWidth/2, 0, 6, h);
+    ctx.shadowBlur = 0;
 
-            // Acceleration & Braking
-            if (keys.w) {
-                speed += activeCarData.accel;
-                if (speed > activeCarData.speedMax) speed = activeCarData.speedMax;
-            } else if (keys.s) {
-                speed -= activeCarData.accel * 0.6;
-                if (speed < -activeCarData.speedMax * 0.4) speed = -activeCarData.speedMax * 0.4;
-            } else {
-                speed *= 0.98; // Friction
-            }
+    // 6-Lane Dividers
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([22, 22]);
+    ctx.lineDashOffset = -roadOffset;
 
-            if (keys.space) {
-                speed *= 0.92; // Handbrake
-            }
+    let laneW = roadWidth / 6;
+    for (let l = 1; l <= 5; l++) {
+      ctx.beginPath();
+      ctx.moveTo(cx - roadWidth/2 + laneW * l, 0);
+      ctx.lineTo(cx - roadWidth/2 + laneW * l, h);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
 
-            // Steering
-            const maxSteer = 0.04;
-            if (keys.a) steeringAngle = Math.min(steeringAngle + 0.005, maxSteer);
-            else if (keys.d) steeringAngle = Math.max(steeringAngle - 0.005, -maxSteer);
-            else steeringAngle *= 0.8;
+    // Draw Obstacles & Traffic
+    for (let t of traffic) {
+      if (t.type === 'car') {
+        drawCar(cx + t.x, t.y, 1.0, t.color, '#000', false);
+      } else if (t.type === 'ramp') {
+        ctx.fillStyle = '#f59e0b';
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.moveTo(cx + t.x - 28, t.y + 35);
+        ctx.lineTo(cx + t.x + 28, t.y + 35);
+        ctx.lineTo(cx + t.x + 28, t.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('RAMP', cx + t.x - 15, t.y + 22);
+      } else if (t.type === 'loop') {
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 6;
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(cx + t.x, t.y + 20, 26, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    }
 
-            // Apply turn relative to velocity
-            if (Math.abs(speed) > 0.001) {
-                const turnFactor = speed > 0 ? 1 : -1;
-                carRot.y += steeringAngle * turnFactor * (speed / activeCarData.speedMax);
-            }
+    // Draw Powerups
+    for (let p of powerups) {
+      ctx.fillStyle = p.type === 'shield' ? '#00e5ff' : '#ff2d3d';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.arc(cx + p.x, p.y, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(p.type === 'shield' ? '🛡️' : '⚡', cx + p.x - 6, p.y + 4);
+    }
 
-            // Orientation and Movement Vectors
-            carQuaternion.setFromEuler(carRot);
-            const forwardVector = new THREE.Vector3(0, 0, -1).applyQuaternion(carQuaternion);
+    // Player Physics & Stunt Transformations
+    let playerScale = 1.0;
+    let playerYOffset = 0;
+    let playerAngle = 0;
 
-            // Loop-de-Loop Physics Handling
-            const loopZ = -500;
-            const loopRadius = 35;
-            const distToLoopCenter = Math.hypot(carPos.x, carPos.z - loopZ);
+    if (stuntMode === 'ramp') {
+      let progress = 1 - (stuntAnim / 1.3);
+      playerScale = 1.0 + Math.sin(progress * Math.PI) * 0.7;
+      playerYOffset = -Math.sin(progress * Math.PI) * 85;
+      playerAngle = Math.sin(progress * Math.PI) * 0.2;
+    } else if (stuntMode === 'loop') {
+      let progress = 1 - (stuntAnim / 1.6);
+      playerScale = 0.75 + Math.sin(progress * Math.PI) * 0.4;
+      playerAngle = progress * Math.PI * 2;
+    }
 
-            if (distToLoopCenter < 20 && carPos.z < -450 && carPos.z > -550) {
-                // Inside Loop zone: pitch car around loop curvature
-                const relZ = carPos.z - loopZ;
-                const angleOnLoop = Math.atan2(carPos.y - loopRadius, -relZ);
-                
-                // Keep pitch synchronized to loop geometry
-                carRot.x = angleOnLoop;
-            } else {
-                // Standard flat terrain gravity & slope recovery
-                carRot.x *= 0.9;
-                carRot.z *= 0.9;
-                carPos.y = 0.5;
-            }
+    drawCar(cx + carX, (h - 130) + playerYOffset, playerScale, customPaint, customGlow, true, keys.boost, playerAngle);
+  }
 
-            // Apply displacement
-            carPos.addScaledVector(forwardVector, speed);
+  requestAnimationFrame(loop);
+}
 
-            // Update Mesh position/rotation
-            carGroup.position.copy(carPos);
-            carGroup.quaternion.copy(carQuaternion);
-
-            // Spin wheels based on speed
-            wheelMeshes.forEach(w => {
-                w.children[0].rotation.x += speed * 2;
-            });
-
-            // Update HUD
-            const speedMph = Math.round(Math.abs(speed) * 160);
-            document.getElementById('speedometer').innerText = `${speedMph} MPH`;
-        }
-
-        // ---------------------------------------------------------------
-        // CAMERA CONTROLLER
-        // ---------------------------------------------------------------
-        function updateCamera() {
-            if (inGarage) {
-                // Smooth orbiting camera in garage mode
-                const time = Date.now() * 0.0008;
-                camera.position.x = carGroup.position.x + Math.sin(time) * 9;
-                camera.position.z = carGroup.position.z + Math.cos(time) * 9;
-                camera.position.y = carGroup.position.y + 3;
-                camera.lookAt(carGroup.position.clone().add(new THREE.Vector3(0, 0.8, 0)));
-            } else {
-                // Dynamic chase camera during gameplay
-                const offset = new THREE.Vector3(0, 3.5, 9).applyQuaternion(carGroup.quaternion);
-                const targetCamPos = carGroup.position.clone().add(offset);
-                camera.position.lerp(targetCamPos, 0.1);
-
-                const lookTarget = carGroup.position.clone().add(new THREE.Vector3(0, 1.2, -2).applyQuaternion(carGroup.quaternion));
-                camera.lookAt(lookTarget);
-            }
-        }
-
-        // ---------------------------------------------------------------
-        // GARAGE & CUSTOMIZATION LOGIC
-        // ---------------------------------------------------------------
-        let inGarage = false;
-
-        function populateCarList() {
-            const listContainer = document.getElementById('car-list');
-            listContainer.innerHTML = '';
-
-            CAR_DATABASE.forEach((car, idx) => {
-                const card = document.createElement('div');
-                card.className = `car-card ${idx === currentCarIndex ? 'active' : ''}`;
-                card.onclick = () => selectCar(idx);
-                card.innerHTML = `
-                    ${car.name}
-                    <span>${car.category}</span>
-                `;
-                listContainer.appendChild(card);
-            });
-        }
-
-        function selectCar(index) {
-            currentCarIndex = index;
-            activeCarData = Object.assign({}, CAR_DATABASE[index]);
-
-            // Sync UI Inputs
-            document.getElementById('paintColor').value = activeCarData.color;
-            document.getElementById('rimColor').value = activeCarData.rimColor;
-            document.getElementById('paintFinish').value = activeCarData.finish;
-            document.getElementById('rimStyle').value = activeCarData.rimStyle;
-            document.getElementById('spoilerType').value = activeCarData.spoiler;
-            document.getElementById('windowTint').value = activeCarData.tint;
-            document.getElementById('suspensionHeight').value = activeCarData.height;
-
-            populateCarList();
-            createCarMesh(activeCarData);
-            document.getElementById('car-name-display').innerText = `Vehicle: ${activeCarData.name}`;
-        }
-
-        function updateCarCustoms() {
-            activeCarData.color = document.getElementById('paintColor').value;
-            activeCarData.rimColor = document.getElementById('rimColor').value;
-            activeCarData.finish = document.getElementById('paintFinish').value;
-            activeCarData.rimStyle = document.getElementById('rimStyle').value;
-            activeCarData.spoiler = document.getElementById('spoilerType').value;
-            activeCarData.tint = document.getElementById('windowTint').value;
-            activeCarData.height = parseFloat(document.getElementById('suspensionHeight').value);
-
-            // Update master DB record
-            CAR_DATABASE[currentCarIndex] = Object.assign({}, activeCarData);
-
-            // Rebuild model with updated specs
-            createCarMesh(activeCarData);
-        }
-
-        function openGarage() {
-            inGarage = true;
-            document.getElementById('garage-modal').style.display = 'flex';
-            document.getElementById('hud').style.display = 'none';
-            document.getElementById('controls-hint').style.display = 'none';
-            document.getElementById('garage-btn').style.display = 'none';
-            populateCarList();
-        }
-
-        function closeGarage() {
-            inGarage = false;
-            document.getElementById('garage-modal').style.display = 'none';
-            document.getElementById('hud').style.display = 'flex';
-            document.getElementById('controls-hint').style.display = 'block';
-            document.getElementById('garage-btn').style.display = 'block';
-            resetCarPosition();
-        }
-
-        // Initialize Garage list and starting mesh
-        createCarMesh(activeCarData);
-
-        // ---------------------------------------------------------------
-        // MAIN GAME LOOP & RESIZE HANDLER
-        // ---------------------------------------------------------------
-        function animate() {
-            requestAnimationFrame(animate);
-            updatePhysics();
-            updateCamera();
-            renderer.render(scene, camera);
-        }
-
-        window.addEventListener('resize', ()annotation => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Start render loop
-        animate();
-    </script>
+requestAnimationFrame(loop);
+updateBank();
+</script>
 </body>
 </html>
